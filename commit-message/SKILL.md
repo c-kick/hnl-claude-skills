@@ -32,8 +32,6 @@ Generate commit messages following conventional commit format and project style.
 
    - Bullet point details
    - Another change
-
-   Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
    ```
 
 ## Commit Types
