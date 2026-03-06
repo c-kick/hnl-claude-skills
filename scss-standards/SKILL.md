@@ -4,58 +4,58 @@ Apply when working with CSS, SCSS, or styling in this project.
 
 ## Architecture Overview
 
-**Main entry points (webpack-compiled):**
+A well-structured SCSS project separates concerns into entry points, components, tools, and tokens. Adapt the structure below to match the project's naming conventions.
+
+**Main entry points (compiled via bundler):**
 | File | Output | Purpose |
 |------|--------|---------|
-| `assets/css/nok-components.scss` | `nok-components.css` | Frontend styles |
-| `assets/css/nok-backend-css.scss` | `nok-backend-css.css` | Admin/editor |
-| `assets/css/color_tests-v2.scss` | `color_tests-v2.css` | Color system |
+| `assets/css/components.scss` | `components.css` | Frontend styles |
+| `assets/css/backend.scss` | `backend.css` | Admin/editor styles |
 
-**Directory structure:**
+**Recommended directory structure:**
 ```
 assets/css/
-├── components/          # Production BEM components (_nok-*.scss)
-├── tools/               # Mixins, RFS, utilities
-├── libs/                # Third-party (baseline grid)
-├── _nok-variables.scss  # Design tokens, breakpoints
-├── _nok-colors-v2.scss  # OKLCH color system
-├── _nok-helpers.scss    # Utility classes (loaded last)
-└── _nok-reboot.scss     # CSS reset
+├── components/          # BEM components (_*.scss)
+├── tools/               # Mixins, utilities, RFS
+├── libs/                # Third-party styles
+├── _variables.scss      # Design tokens, breakpoints
+├── _colors.scss         # Color system
+├── _helpers.scss        # Utility classes (loaded last)
+└── _reboot.scss         # CSS reset / normalization
 ```
 
 ## Build Commands
 
 ```bash
-# Main build (webpack)
+# Main build (via bundler)
 npm run build
 
-# Compile individual post-part CSS (sass CLI)
-npx sass template-parts/post-parts/{name}.scss template-parts/post-parts/{name}.css
+# Compile individual standalone SCSS files (sass CLI)
+npx sass path/to/{name}.scss path/to/{name}.css
 
 # Minified version
-npx sass template-parts/post-parts/{name}.scss template-parts/post-parts/{name}.min.css --style=compressed
+npx sass path/to/{name}.scss path/to/{name}.min.css --style=compressed
 ```
 
-## Post-Parts CSS (Lazy-loaded)
+## Standalone Component CSS (Lazy-loaded)
 
-Post-parts with custom styles have co-located SCSS files that compile separately:
-- `template-parts/post-parts/nok-bmi-calculator.scss` → `.css`
-- These are **not** in webpack — compile manually with `npx sass`
-- `TemplateRenderer.php` loads CSS via `resolve_css_file()` method
+Components with custom styles can have co-located SCSS files that compile separately from the main bundle:
+- These are **not** in the bundler — compile manually with `npx sass`
+- The template system should load these CSS files on demand when the component is rendered
 
 ## Module System
 
 Use `@use` with namespacing (not deprecated `@import`):
 ```scss
 @use "shared" as components-base;
-@use "../tools/nok-mixins" as mixins;
+@use "../tools/mixins" as mixins;
 
 // Access via namespace
 @include components-base.transition-properties { ... }
 @include mixins.media-breakpoint-down(md) { ... }
 ```
 
-**Exception:** `_nok-helpers.scss` uses `@import` in `nok-components.scss` to ensure it cascades last for utility overrides.
+**Exception:** Helper/utility files may use `@import` in the main entry point to ensure they cascade last for utility overrides.
 
 ## Performance Patterns
 
@@ -84,13 +84,13 @@ transition: backdrop-filter 300ms ease;
 
 ## Color System
 
-Uses OKLCH color space via `_nok-colors-v2.scss`:
+Use CSS custom properties for the color system. OKLCH is recommended for perceptual uniformity:
 ```scss
 // Colors exposed as CSS custom properties
---nok-lightblue, --nok-darkblue, --nok-yellow, etc.
+--color-primary, --color-secondary, --color-accent, etc.
 
 // With variants
---nok-lightblue--darker, --nok-lightblue--lighter
+--color-primary--darker, --color-primary--lighter
 
 // Alpha control via CSS variable
 --bg-alpha-value: 0.5;
@@ -98,14 +98,14 @@ Uses OKLCH color space via `_nok-colors-v2.scss`:
 
 ## Common Mixins
 
-From `tools/_nok-mixins.scss`:
+Provide project mixins for responsive breakpoints, typography, and component patterns:
 ```scss
 @include mixins.media-breakpoint-down(md) { }
 @include mixins.media-breakpoint-up(lg) { }
-@include mixins.nok-border-radius('large', 'bottom');
+@include mixins.border-radius('large', 'bottom');
 @include mixins.transition-properties { }
-@include mixins.nok-text-font;
-@include mixins.nok-heading-font;
+@include mixins.text-font;
+@include mixins.heading-font;
 ```
 
 ## Breakpoints
