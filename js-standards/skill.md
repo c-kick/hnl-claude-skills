@@ -1,49 +1,21 @@
 # JavaScript Standards and Patterns
 
-Apply when writing or modifying JavaScript in `assets/js/`. Covers DOMule library usage, module patterns, and event handling.
-
-## DOMule Library
-
-External library at `assets/js/domule/`. Repository: https://github.com/c-kick/DOMule
-
-### Core Modules
-
-| Module | Purpose |
-|--------|---------|
-| `core.events.mjs` | Event system with `docReady`, `docLoaded`, `addListener` |
-| `core.loader.mjs` | Dynamic module loading via `data-requires` |
-| `core.log.mjs` | Logging with `logger.info()`, `logger.error()`, `DEBUG` flag |
-
-### Utilities
-
-| Utility | Purpose |
-|---------|---------|
-| `util.ensure-visibility.mjs` | `ViewportScroller` - scroll elements into view with header detection |
-| `util.observe.mjs` | `isVisible`, `isUnobstructed`, `getBlockerHeight` |
-| `util.debounce.mjs` | Debounce/throttle utilities |
-
-### Click Handlers (`modules/hnl.clickhandlers.mjs`)
-
-```js
-import {singleClick, doubleClick} from './domule/modules/hnl.clickhandlers.mjs';
-
-// Bind to elements - uses PointerEvent for unified mouse/touch/pen handling
-singleClick(document.querySelectorAll('.my-button'), (e, element) => {
-    // e.target is the clicked element
-    // element is the bound element (from currentTarget)
-});
-```
+Apply when writing or modifying JavaScript modules. Covers module patterns, event handling, lazy loading, and scroll utilities.
 
 ## Event Handling: Delegation vs Direct Binding
 
-### Direct Binding (`singleClick`)
+### Direct Binding
 
 ```js
-singleClick(document.querySelectorAll('a[href*="#"]'), handler);
+document.querySelectorAll('.my-button').forEach(el => {
+    el.addEventListener('pointerup', (e) => {
+        // handle click/tap/pen
+    });
+});
 ```
 
-**Pros:** Clean syntax, unified pointer handling (mouse/touch/pen)
-**Cons:** Only binds to elements present at DOM ready. Dynamically added elements won't be handled.
+**Pros:** Simple, scoped to known elements, unified pointer handling (mouse/touch/pen) via PointerEvent
+**Cons:** Only binds to elements present at bind time. Dynamically added elements won't be handled.
 
 ### Event Delegation
 
@@ -62,18 +34,16 @@ document.addEventListener('click', (e) => {
 
 | Scenario | Approach |
 |----------|----------|
-| Static elements (nav, footer links) | `singleClick` - cleaner |
+| Static elements (nav, footer links) | Direct binding - cleaner |
 | Dynamic content (AJAX-loaded, SPA) | Event delegation |
 | Global handlers (anchor scrolling) | Event delegation |
-| Component-scoped clicks | `singleClick` |
+| Component-scoped clicks | Direct binding |
 
-## ViewportScroller Pattern
+## Scroll-to-Element Pattern
 
-For scroll-to-anchor functionality, cache ViewportScroller instances in a WeakMap to ensure consistent positioning and prevent rounding drift on repeated scrolls.
+For scroll-to-anchor functionality, cache scroll controller instances in a WeakMap to ensure consistent positioning and prevent rounding drift on repeated scrolls.
 
 ```js
-import {ViewportScroller} from './domule/util.ensure-visibility.mjs';
-
 // WeakMap allows garbage collection when elements are removed
 const scrollerMap = new WeakMap();
 
@@ -82,13 +52,11 @@ const scrollToElement = (el) => {
 
     let scroller = scrollerMap.get(el);
     if (!scroller) {
-        scroller = new ViewportScroller(el, {
-            behavior: 'smooth',
-            extraOffset: 20  // breathing room below header
-        });
+        scroller = { target: el, behavior: 'smooth', extraOffset: 20 };
         scrollerMap.set(el, scroller);
     }
-    scroller.ensureVisible();
+
+    el.scrollIntoView({ behavior: scroller.behavior, block: 'start' });
 };
 ```
 
@@ -98,26 +66,39 @@ const scrollToElement = (el) => {
 
 ## Lazy Loading Modules
 
-Use `data-requires` attribute for lazy-loaded modules:
+Use `data-requires` attributes (or similar) for lazy-loaded modules, combined with IntersectionObserver:
 
 ```html
-<div data-requires="./nok-datepicker.mjs">
+<div data-requires="./datepicker.mjs">
     <!-- Content that needs datepicker -->
 </div>
 ```
 
-The `core.loader.mjs` uses IntersectionObserver to load modules when elements become visible.
+```js
+// Observer triggers module load when element enters viewport
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const modulePath = entry.target.dataset.requires;
+            import(modulePath).then(mod => mod.init([entry.target]));
+            observer.unobserve(entry.target);
+        }
+    });
+});
+
+document.querySelectorAll('[data-requires]').forEach(el => observer.observe(el));
+```
 
 ### Module Structure
 
-Modules should export an `init()` function that the loader calls:
+Lazy-loaded modules should export an `init()` function:
 
 ```js
-// nok-my-feature.mjs
+// my-feature.mjs
 export const NAME = 'my-feature';
 
 export function init(elements) {
-    // elements = NodeList of elements that required this module
+    // elements = NodeList/array of elements that required this module
     elements.forEach(el => {
         // Initialize feature on element
     });
@@ -126,26 +107,22 @@ export function init(elements) {
 
 ## Event System
 
-```js
-import events from './domule/core.events.mjs';
+When using a centralized event system, typical lifecycle hooks include:
 
+```js
 // DOM ready (DOMContentLoaded)
-events.docReady(() => {
+document.addEventListener('DOMContentLoaded', () => {
     // DOM is parsed, safe to query elements
 });
 
-// DOM loaded (window load)
-events.docLoaded(() => {
-    // All resources loaded (images, etc.)
+// All resources loaded
+window.addEventListener('load', () => {
+    // All resources loaded (images, fonts, etc.)
 });
 
-// Custom events with cleanup
-events.addListener('scroll', (e) => {
-    // Throttled scroll handler
-});
-
-events.addListener('breakPointChange', (e) => {
-    // Responsive breakpoint changed
+// Custom events for app-level coordination
+window.addEventListener('breakpointchange', (e) => {
+    // Respond to viewport breakpoint changes
 });
 ```
 
@@ -154,23 +131,28 @@ events.addListener('breakPointChange', (e) => {
 Source files use `.mjs` extension. Minified versions are `.min.mjs`:
 
 ```
-nok-feature.mjs      # Source (development)
-nok-feature.min.mjs  # Minified (production)
+my-feature.mjs      # Source (development)
+my-feature.min.mjs   # Minified (production)
 ```
 
-The loader automatically selects minified versions in production.
+The build system or loader should automatically select minified versions in production.
 
 ## Debugging
 
+Use a structured logging approach:
+
 ```js
-import {logger, DEBUG} from './domule/core.log.mjs';
+const DEBUG = new URLSearchParams(location.search).has('debug');
+
+const logger = {
+    info: (module, ...args) => console.info(`[${module}]`, ...args),
+    error: (module, ...args) => console.error(`[${module}]`, ...args),
+    debug: (module, ...args) => { if (DEBUG) console.log(`[${module}]`, ...args); },
+};
 
 logger.info(NAME, 'Starting up...');
 logger.error(NAME, 'Something went wrong', error);
-
-if (DEBUG) {
-    logger.log(NAME, 'Debug-only message');
-}
+logger.debug(NAME, 'Debug-only message');
 ```
 
 `DEBUG` is true when `?debug` is in the URL or in development mode.

@@ -118,5 +118,4 @@ Before committing:
 
 ## Complete Standards
 
-For detailed standards with full examples, see:
-@../../docs/php_documentation_standards.md
+If the project has extended documentation standards, check for a dedicated docs file (e.g., `docs/php_documentation_standards.md`) for full examples and project-specific conventions.
