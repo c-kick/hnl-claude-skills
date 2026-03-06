@@ -47,6 +47,7 @@ All commands are run from any **project root** you want to use the skills in.
 | `skill-ls-bundles [bundle]` | List all bundles and their resolved skill chains; optionally filter to one bundle |
 | `skill-ls-installed` | Show skills installed in the current project, with status |
 | `skill-add <skill> [...]` | Link one or more skills into the current project |
+| `skill-add-all` | Link all skills into the current project |
 | `skill-remove <skill> [...]` | Remove one or more skills from the current project |
 | `skill-bundle-add <bundle>` | Install a full bundle (resolves inheritance chain) |
 | `skill-bundle-remove <bundle>` | Remove a full bundle (exact mirror of add) |

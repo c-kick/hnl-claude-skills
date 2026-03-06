@@ -44,6 +44,12 @@ skill-add() {
     done
 }
 
+skill-add-all() {
+    for d in "$CLAUDE_SKILLS"/*/; do
+        skill-add "$(basename "$d")"
+    done
+}
+
 skill-remove() {
     if [ $# -eq 0 ]; then
         echo "Usage: skill-remove <skill> [skill...]"

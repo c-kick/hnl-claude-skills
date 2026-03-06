@@ -28,6 +28,12 @@ function skill-add {
     }
 }
 
+function skill-add-all {
+    Get-ChildItem $env:CLAUDE_SKILLS -Directory | ForEach-Object {
+        skill-add $_.Name
+    }
+}
+
 function skill-remove {
     foreach ($s in $args) {
         $dst = ".claude\skills\$s"
