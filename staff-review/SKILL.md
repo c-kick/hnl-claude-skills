@@ -11,10 +11,10 @@ Ruthless architecture, design, and code critique with SOLID principles, core eng
 
 ## When to Use
 
-- New page-part field types or templates
-- Changes to core systems (FieldContext, Registry, MetaManager)
+- New modules, services, or abstractions
+- Changes to core or shared systems
 - Security-sensitive code (form handling, user input, authentication)
-- New JavaScript modules or significant refactors
+- Significant refactors or new language/framework integrations
 - Any change you're uncertain about
 
 ## Review Process
@@ -84,8 +84,7 @@ If you block, list the minimum changes needed to unblock.
 
 ## Example Invocations
 
-```
-/staff-review inc/PageParts/Registry.php
-/staff-review src/blocks/embed-nok-page-part/
-/staff-review "the changes I just made to the color selector"
-```
+/staff-review src/auth/tokenService.js
+/staff-review lib/core/Registry.php
+/staff-review “the changes I just made to the payment flow”
+/staff-review src/components/DataTable/
