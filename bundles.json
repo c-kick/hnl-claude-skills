@@ -1,0 +1,13 @@
+{
+  "general": {
+    "skills": ["reflect"]
+  },
+  "code_development": {
+    "extends": ["general"],
+    "skills": ["commit-message", "commit-message-this", "hostile-review", "staff-review"]
+  },
+  "web_development": {
+    "extends": ["code_development"],
+    "skills": ["i18n-standards", "js-standards", "php-documentation-standards", "scss-standards"]
+  }
+}
