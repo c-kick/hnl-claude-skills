@@ -4,7 +4,15 @@ if (-not $env:CLAUDE_SKILLS) {
 }
 
 function skill-ls {
-    Get-ChildItem $env:CLAUDE_SKILLS -Directory | Select-Object -ExpandProperty Name
+    $skillsDir = ".claude\skills"
+    Get-ChildItem $env:CLAUDE_SKILLS -Directory | Where-Object { $_.Name -notlike '.*' } | ForEach-Object {
+        $name = $_.Name
+        if (Test-Path (Join-Path $skillsDir $name)) {
+            Write-Host "$name [installed]" -ForegroundColor Green
+        } else {
+            Write-Host $name
+        }
+    }
 }
 
 function skill-add {

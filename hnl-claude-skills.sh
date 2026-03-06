@@ -6,8 +6,16 @@
 CLAUDE_SKILLS="${CLAUDE_SKILLS:-$HOME/.config/hnl-claude-skills}"
 
 skill-ls() {
+    local skills_dir=".claude/skills"
     for d in "$CLAUDE_SKILLS"/*/; do
-        [ -d "$d" ] && basename "$d"
+		[ -d "$d" ] || continue
+		name=$(basename "$d")
+		[[ "$name" == .* ]] && continue  # skip hidden directories
+        if [ -d "$skills_dir/$name" ] || [ -L "$skills_dir/$name" ]; then
+            printf "\e[32m%s [installed]\e[0m\n" "$name"
+        else
+            echo "$name"
+        fi
     done
 }
 
