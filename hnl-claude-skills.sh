@@ -68,8 +68,6 @@ _load_bundles() {
     fi
 
     _BUNDLE_NAMES=()
-    declare -gA _BUNDLE_SKILLS=()
-    declare -gA _BUNDLE_EXTENDS=()
 
     local current=""
     while IFS= read -r line || [ -n "$line" ]; do
@@ -83,8 +81,8 @@ _load_bundles() {
         if [[ "$line" =~ ^\[([^]]+)\]$ ]]; then
             current="${BASH_REMATCH[1]}"
             _BUNDLE_NAMES+=("$current")
-            _BUNDLE_SKILLS["$current"]=""
-            _BUNDLE_EXTENDS["$current"]=""
+            eval "_BUNDLE_SKILLS_${current}=''"
+            eval "_BUNDLE_EXTENDS_${current}=''"
             continue
         fi
 
@@ -92,15 +90,18 @@ _load_bundles() {
 
         # extends directive
         if [[ "$line" =~ ^extends=(.+)$ ]]; then
-            _BUNDLE_EXTENDS["$current"]="${BASH_REMATCH[1]}"
+            eval "_BUNDLE_EXTENDS_${current}='${BASH_REMATCH[1]}'"
             continue
         fi
 
         # skill name — append with newline separator
-        if [ -n "${_BUNDLE_SKILLS["$current"]}" ]; then
-            _BUNDLE_SKILLS["$current"]+=$'\n'"$line"
+        local current_skills
+        eval "current_skills=\"\$_BUNDLE_SKILLS_${current}\""
+        if [ -n "$current_skills" ]; then
+            eval "_BUNDLE_SKILLS_${current}=\"\${current_skills}
+${line}\""
         else
-            _BUNDLE_SKILLS["$current"]="$line"
+            eval "_BUNDLE_SKILLS_${current}=\"${line}\""
         fi
     done < "$conf"
 }
@@ -135,9 +136,10 @@ _resolve_bundle() {
     visiting+=("$name")
 
     # resolve parents
-    local extends="${_BUNDLE_EXTENDS["$name"]}"
-    if [ -n "$extends" ]; then
-        IFS=',' read -ra parents <<< "$extends"
+    local extends_val
+    eval "extends_val=\"\$_BUNDLE_EXTENDS_${name}\""
+    if [ -n "$extends_val" ]; then
+        IFS=',' read -ra parents <<< "$extends_val"
         for parent in "${parents[@]}"; do
             parent="${parent// /}"
             _resolve_bundle "$parent" "${visiting[@]}" || return 1
@@ -145,7 +147,9 @@ _resolve_bundle() {
     fi
 
     # add own skills (deduplicated)
-    if [ -n "${_BUNDLE_SKILLS["$name"]}" ]; then
+    local skills_val
+    eval "skills_val=\"\$_BUNDLE_SKILLS_${name}\""
+    if [ -n "$skills_val" ]; then
         while IFS= read -r skill; do
             skill="${skill// /}"
             [ -z "$skill" ] && continue
@@ -160,7 +164,7 @@ _resolve_bundle() {
             if [ "$dup" -eq 0 ]; then
                 _RESOLVED_SKILLS+=("$skill")
             fi
-        done <<< "${_BUNDLE_SKILLS["$name"]}"
+        done <<< "$skills_val"
     fi
 }
 
