@@ -1,5 +1,7 @@
 ﻿# hnl-claude-skills
-$env:CLAUDE_SKILLS = "$HOME\.config\hnl-claude-skills"
+if (-not $env:CLAUDE_SKILLS) {
+    $env:CLAUDE_SKILLS = "$HOME\.config\hnl-claude-skills"
+}
 
 function skill-ls {
     Get-ChildItem $env:CLAUDE_SKILLS -Directory | Select-Object -ExpandProperty Name
