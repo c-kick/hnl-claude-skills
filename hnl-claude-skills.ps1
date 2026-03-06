@@ -10,12 +10,19 @@ function skill-add {
     foreach ($s in $args) {
         $src = "$env:CLAUDE_SKILLS\$s"
         $dst = ".claude\skills\$s"
-        if (Test-Path $src) {
-            New-Item -ItemType Junction -Path $dst -Target $src -Force | Out-Null
-            Write-Host "OK: $s"
-        } else {
-            Write-Host "NOT FOUND: $s (not in $env:CLAUDE_SKILLS)"
-        }
+        if (Test-Path $dst) {
+			$item = Get-Item $dst
+			$isOurJunction = ($item.LinkType -eq "Junction") -and ($item.Target -like "*hnl-claude-skills*")
+			if ($isOurJunction) {
+				Write-Host "ALREADY_INSTALLED: $s"
+				continue
+			} else {
+				Write-Host "EXISTS: $s (not managed by hnl-claude-skills, skipping)"
+				continue
+			}
+		}
+		New-Item -ItemType Junction -Path $dst -Target $src | Out-Null
+		Write-Host "OK: $s"
     }
 }
 
@@ -32,14 +39,28 @@ function skill-remove {
 }
 
 function _load-bundles {
-    $bundleFile = "$env:CLAUDE_SKILLS\bundles.json"
+    $bundleFile = "$env:CLAUDE_SKILLS\bundles.conf"
     if (-not (Test-Path $bundleFile)) {
-        Write-Host "ERROR: bundles.json not found in $env:CLAUDE_SKILLS"
+        Write-Host "ERROR: bundles.conf not found in $env:CLAUDE_SKILLS"
         exit 1
     }
-    $raw = Get-Content $bundleFile | ConvertFrom-Json
     $bundles = @{}
-    $raw.PSObject.Properties | ForEach-Object { $bundles[$_.Name] = $_.Value }
+    $current = $null
+    foreach ($line in Get-Content $bundleFile) {
+        $line = $line.Trim()
+        if ($line -eq "" -or $line.StartsWith("#")) { continue }
+        if ($line -match '^\[(.+)\]$') {
+            $current = $Matches[1]
+            $bundles[$current] = [PSCustomObject]@{ skills = @(); extends = @() }
+            continue
+        }
+        if ($null -eq $current) { continue }
+        if ($line -match '^extends=(.+)$') {
+            $bundles[$current].extends = $Matches[1] -split ',' | ForEach-Object { $_.Trim() }
+            continue
+        }
+        $bundles[$current].skills += $line
+    }
     return $bundles
 }
 
@@ -107,7 +128,7 @@ function skill-bundle-add {
     $visiting = [System.Collections.Generic.List[string]]::new()
     _resolve-bundle -name $bundle -bundles $bundles -resolved $resolved -visiting $visiting
     Write-Host "Installing bundle '$bundle' ($($resolved.Count) skills):"
-    skill-add @($resolved)
+    foreach ($skill in $resolved) { skill-add $skill }
 }
 
 function skill-bundle-remove {
@@ -122,5 +143,40 @@ function skill-bundle-remove {
     $visiting = [System.Collections.Generic.List[string]]::new()
     _resolve-bundle -name $bundle -bundles $bundles -resolved $resolved -visiting $visiting
     Write-Host "Removing bundle '$bundle' ($($resolved.Count) skills):"
-    skill-remove @($resolved)
+    foreach ($skill in $resolved) { skill-remove $skill }
+}
+
+
+function skill-ls-installed {
+    $skillsDir = ".claude\skills"
+    if (-not (Test-Path $skillsDir)) {
+        Write-Host "No skills directory found in current project."
+        return
+    }
+    $items = Get-ChildItem $skillsDir
+    if (-not $items) {
+        Write-Host "No skills installed in current project."
+        return
+    }
+    foreach ($item in $items) {
+        $isJunction = $item.Attributes -band [IO.FileAttributes]::ReparsePoint
+        if ($isJunction) {
+            $target = (Get-Item $item.FullName).Target
+            if ($target -like "*hnl-claude-skills*") {
+                Write-Host "LINKED:   $($item.Name) -> $target"
+            } else {
+                Write-Host "EXTERNAL: $($item.Name) -> $target"
+            }
+        } else {
+            Write-Host "EXTERNAL: $($item.Name) (local directory)"
+        }
+    }
+}
+
+function skill-update {
+    Write-Host "Updating hnl-claude-skills..."
+    Push-Location $env:CLAUDE_SKILLS
+    git pull
+    git submodule update --remote
+    Pop-Location
 }
