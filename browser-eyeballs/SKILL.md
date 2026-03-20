@@ -128,6 +128,22 @@ The Chromium instance runs inside a Docker container on **bridge networking**. T
 - To reach services on the host machine, use the host's LAN IP (e.g., `192.168.1.199`)
 - Public URLs work normally
 
+## Troubleshooting
+
+### MCP tools not available
+The Puppeteer MCP server connects at **session startup only**. If the `mcp__puppeteer__*` tools are not found (ToolSearch returns nothing), the server failed to start. This cannot be fixed mid-session.
+
+**Most common cause:** a stale Docker container from a previous session is holding port 9222. Fix:
+```bash
+# Find and remove the stale container
+docker ps -a --filter "ancestor=mcp/puppeteer-remote" --format '{{.ID}} {{.Status}}'
+docker stop <id> && docker rm <id>
+```
+Then ask the user to restart the Claude Code session (`/exit` + relaunch).
+
+### Container starts but tools still missing
+Check `~/.claude.json` has `mcpServers.puppeteer` configured. The server must be defined at user level, not project level.
+
 ## What This is NOT
 
 - Not a replacement for `WebFetch` — if you just need to read page content or an API response, `WebFetch` is faster and simpler
