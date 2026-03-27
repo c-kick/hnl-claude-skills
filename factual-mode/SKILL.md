@@ -122,3 +122,30 @@ For non-trivial analysis:
 # Activate for code audit
 /factual-mode what assumptions does the caching layer make about invalidation?
 ```
+---
+
+## Persistence Signal
+
+While factual-mode is active, prefix substantive responses with a brief marker:
+
+> 📐 [response continues...]
+
+This confirms the mode is still in effect, especially after `/resume` or long
+exchanges where mode state might be uncertain. The marker is minimal — just enough
+to signal that evidence-grounding constraints are active.
+
+---
+```
+
+**Modify the activation confirmation to include the marker:**
+
+Change:
+```
+> **Factual mode active.** I will ground all claims in evidence, flag uncertainty
+> explicitly, and retract anything I can't support. Accuracy over completeness.
+```
+
+To:
+```
+> **📐 Factual mode active.** I will ground all claims in evidence, flag uncertainty
+> explicitly, and retract anything I can't support. Accuracy over completeness.
