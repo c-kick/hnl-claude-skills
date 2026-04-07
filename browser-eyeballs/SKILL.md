@@ -20,6 +20,20 @@ Visually browse webpages using a headless Chromium instance running in Docker vi
 
 The Puppeteer MCP server must be configured in `~/.claude.json` under `mcpServers.puppeteer`. It runs headless Chromium inside Docker (`mcp/puppeteer-remote` image).
 
+The recommended MCP config uses `bash -c` to automatically kill stale containers from previous sessions before starting a new one. Without this, a leftover container holding port 9222 will silently prevent MCP connection on the next session (and this cannot be fixed mid-session).
+
+```json
+"puppeteer": {
+  "type": "stdio",
+  "command": "bash",
+  "args": [
+    "-c",
+    "docker rm -f $(docker ps -aq --filter ancestor=mcp/puppeteer-remote) 2>/dev/null; exec docker run -i --rm --init -p 9222:9223 -e DOCKER_CONTAINER=true -e 'PUPPETEER_LAUNCH_OPTIONS={\"headless\":true,\"args\":[\"--remote-debugging-port=9222\",\"--remote-allow-origins=*\"]}' mcp/puppeteer-remote"
+  ],
+  "env": {}
+}
+```
+
 If the MCP tools (`mcp__puppeteer__puppeteer_navigate`, etc.) are not available, tell the user the Puppeteer MCP server is not configured or not running.
 
 ## Workflow
@@ -133,13 +147,11 @@ The Chromium instance runs inside a Docker container on **bridge networking**. T
 ### MCP tools not available
 The Puppeteer MCP server connects at **session startup only**. If the `mcp__puppeteer__*` tools are not found (ToolSearch returns nothing), the server failed to start. This cannot be fixed mid-session.
 
-**Most common cause:** a stale Docker container from a previous session is holding port 9222. Fix:
-```bash
-# Find and remove the stale container
-docker ps -a --filter "ancestor=mcp/puppeteer-remote" --format '{{.ID}} {{.Status}}'
-docker stop <id> && docker rm <id>
-```
-Then ask the user to restart the Claude Code session (`/exit` + relaunch).
+If you're using the recommended MCP config (with `bash -c` cleanup), stale containers are cleaned up automatically. If tools are still missing after a fresh session start:
+
+1. Check for stale containers manually: `docker ps -a --filter "ancestor=mcp/puppeteer-remote"`
+2. Verify `~/.claude.json` has the `mcpServers.puppeteer` entry (see Prerequisites for the recommended config)
+3. Check Docker is running: `docker ps`
 
 ### Container starts but tools still missing
 Check `~/.claude.json` has `mcpServers.puppeteer` configured. The server must be defined at user level, not project level.
