@@ -74,6 +74,28 @@ When invoked without a question — e.g., the user just says `/ambassador` or
      (e.g., `## Project Intent`, `## Conventions`). Let the user approve.
    - **In claude.ai**: Use memory to store key decisions and project facts.
 
+## Live State Verification
+
+**Critical rule:** CLAUDE.md and memory describe the project's *design intent* and
+*architecture*. They do NOT reliably describe the project's *current operational state*
+— which instruments are active, which strategies exist, what the portfolio holds, etc.
+Operational state changes frequently and documentation lags behind.
+
+Before making claims about current operational state, **verify against the live system**:
+
+- **Instruments / strategies**: query the database or API rather than citing CLAUDE.md
+  examples or memory entries
+- **Active configuration**: check live config tables, not hardcoded examples in docs
+- **What the system currently does**: check recent sessions, trades, cycles for actual
+  activity patterns
+
+If the live state contradicts CLAUDE.md or memory, **trust the live state** and flag the
+documentation as stale. Propose corrections.
+
+This rule exists because documentation examples that were once accurate can become stale
+when the project evolves. The ambassador must never reject valid work based on outdated
+assumptions about operational state.
+
 ## Mode 2: Answer (with questions)
 
 When invoked with one or more questions — either directly from the user or forwarded
@@ -82,11 +104,13 @@ from another skill — answer them using your aggregated knowledge.
 ### Procedure
 
 1. Read all available knowledge sources (same as audit).
-2. For each question, determine whether you can answer it from what you know.
-3. **If you can answer**: Answer directly and decisively. Speak as the project.
+2. **Verify operational claims.** If your answer depends on what the project currently
+   does (not how it's designed), check the live system per "Live State Verification" above.
+3. For each question, determine whether you can answer it from what you know.
+4. **If you can answer**: Answer directly and decisively. Speak as the project.
    Format: state the answer, then briefly cite what source informed it.
-4. **If you cannot answer**: Say so. Ask the user. Persist the answer (same as audit).
-5. **If the answer is ambiguous**: Present the most likely interpretation based on
+5. **If you cannot answer**: Say so. Ask the user. Persist the answer (same as audit).
+6. **If the answer is ambiguous**: Present the most likely interpretation based on
    project patterns, flag the ambiguity, and ask the user to confirm. Persist.
 
 ### Answering on behalf of the project
