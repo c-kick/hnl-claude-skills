@@ -20,12 +20,14 @@ git clone --recurse-submodules https://github.com/c-kick/hnl-claude-skills.git ~
 
 The default location is `~/.config/hnl-claude-skills`. To use a different path, clone there instead and set `CLAUDE_SKILLS` in your environment before sourcing the script — both scripts will pick it up.
 
-**Windows** — add to PowerShell profile (`notepad $PROFILE`):
+**Windows** — add to PowerShell profile (Run `notepad $PROFILE` in PowerShell*):
 ```powershell
 # Optional: set a custom location
 # $env:CLAUDE_SKILLS = "D:\path\to\hnl-claude-skills"
 . "$HOME\.config\hnl-claude-skills\hnl-claude-skills.ps1"
 ```
+> If you get an error running `notepad $PROFILE`, this means you don't have a PowerShell profile yet. You can create one with `New-Item -Path $PROFILE -ItemType File -Force`
+
 **macOS/Linux** — add to `~/.bashrc` or `~/.zshrc`:
 ```bash
 # Optional: set a custom location
