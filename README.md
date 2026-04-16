@@ -14,13 +14,19 @@ You can also define bundles - predefined collections of skills. Example: `skill-
 ---
 
 ## Installation
-```bash
-git clone --recurse-submodules https://github.com/c-kick/hnl-claude-skills.git ~/.config/hnl-claude-skills
+
+**Windows (PowerShell):**
+
+1. Clone the repository
+```powershell
+git clone --recurse-submodules https://github.com/c-kick/hnl-claude-skills.git "$HOME/.config/hnl-claude-skills"
 ```
+
+> **Note:** PowerShell does not expand `~` for external programs like `git`. Always use `$HOME` instead.
 
 The default location is `~/.config/hnl-claude-skills`. To use a different path, clone there instead and set `CLAUDE_SKILLS` in your environment before sourcing the script — both scripts will pick it up.
 
-**Windows** — add to PowerShell profile (Run `notepad $PROFILE` in PowerShell*):
+2. Add to PowerShell profile (Run `notepad $PROFILE` in PowerShell*):
 ```powershell
 # Optional: set a custom location
 # $env:CLAUDE_SKILLS = "D:\path\to\hnl-claude-skills"
@@ -28,7 +34,14 @@ The default location is `~/.config/hnl-claude-skills`. To use a different path, 
 ```
 > If you get an error running `notepad $PROFILE`, this means you don't have a PowerShell profile yet. You can create one with `New-Item -Path $PROFILE -ItemType File -Force`
 
-**macOS/Linux** — add to `~/.bashrc` or `~/.zshrc`:
+**macOS/Linux**
+
+1. Clone the repository
+```bash
+git clone --recurse-submodules https://github.com/c-kick/hnl-claude-skills.git ~/.config/hnl-claude-skills
+```
+
+2. Add to `~/.bashrc` or `~/.zshrc`:
 ```bash
 # Optional: set a custom location
 # export CLAUDE_SKILLS="/path/to/hnl-claude-skills"
@@ -112,7 +125,7 @@ Create a skill and just copy its folder to `~/.config/hnl-claude-skills/` (or wh
 For skills that live in their own repository, add them as a submodule:
 
 ```bash
-cd ~/.config/hnl-claude-skills
+cd ~/.config/hnl-claude-skills   # on Windows PowerShell, use: cd "$HOME/.config/hnl-claude-skills"
 git submodule add https://github.com/you/skill-repo.git skill-name
 git commit -m "add: skill-name as submodule"
 git push
@@ -121,7 +134,7 @@ git push
 To update a submodule to its latest version:
 
 ```bash
-cd ~/.config/hnl-claude-skills
+cd ~/.config/hnl-claude-skills   # on Windows PowerShell, use: cd "$HOME/.config/hnl-claude-skills"
 git submodule update --remote skill-name
 git commit -m "update: skill-name to latest"
 git push
