@@ -35,7 +35,7 @@ The default location is `~/.config/hnl-claude-skills`. To use a different path, 
 . "$HOME/.config/hnl-claude-skills/hnl-claude-skills.sh"
 ```
 
-Reload your shell, done.
+Reload your shell (in Windows PowerShell, just run `. $PROFILE`), done.
 
 ---
 
