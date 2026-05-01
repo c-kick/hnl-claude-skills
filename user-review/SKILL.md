@@ -24,7 +24,7 @@ A first-impression user review of a webpage or UI, conducted from the perspectiv
 
 ## Dependencies
 
-Requires the `browser-eyeballs` skill. Before starting, confirm that `mcp__puppeteer__puppeteer_navigate` is available. If not, halt and advise the user to configure the Puppeteer MCP server (see browser-eyeballs/SKILL.md).
+Requires the `browser-eyeballs` skill. Before starting, confirm that some browser automation or screenshot capability is available in the active agent session. If not, halt and advise the user to configure browser inspection for the current agent (see browser-eyeballs/SKILL.md).
 
 ---
 

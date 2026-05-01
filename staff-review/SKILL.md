@@ -1,7 +1,7 @@
 ---
 name: staff-review
 description: Senior Staff Engineer code review with SOLID principles, security analysis, and architecture critique. Use for significant changes, new systems, or when you want ruthless technical feedback.
-allowed-tools: Read, Grep, Glob, WebFetch
+allowed-tools: Read, Grep, Glob
 user-invocable: true
 ---
 

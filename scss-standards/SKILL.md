@@ -1,3 +1,8 @@
+---
+name: scss-standards
+description: SCSS and CSS architecture standards. Apply when working with CSS, SCSS, styling architecture, component styles, tokens, or compiled stylesheet organization.
+---
+
 # SCSS Standards & CSS Architecture
 
 Apply when working with CSS, SCSS, or styling in this project.

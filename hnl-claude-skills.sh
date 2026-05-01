@@ -1,18 +1,67 @@
 #!/usr/bin/env bash
-# hnl-claude-skills — bash port
+# agent-skills — bash helpers
 # Source this file from ~/.bashrc or ~/.zshrc:
-#   . "$HOME/.config/hnl-claude-skills/hnl-claude-skills.sh"
+#   . "$HOME/.config/agent-skills/agent-skills.sh"
 
-CLAUDE_SKILLS="${CLAUDE_SKILLS:-$HOME/.config/hnl-claude-skills}"
+_agent_skills_home="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -z "${AGENT_SKILLS:-}" ]; then
+    AGENT_SKILLS="${CLAUDE_SKILLS:-$_agent_skills_home}"
+fi
+CLAUDE_SKILLS="${CLAUDE_SKILLS:-$AGENT_SKILLS}"
+AGENT_SKILLS_TARGETS="${AGENT_SKILLS_TARGETS:-.claude/skills .codex/skills}"
+unset _agent_skills_home
+
+_skill_managed_target() {
+    local target="$1"
+    case "$target" in
+        "$AGENT_SKILLS"/*|"$AGENT_SKILLS") return 0 ;;
+        "$CLAUDE_SKILLS"/*|"$CLAUDE_SKILLS") return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+_skill_target_dirs() {
+    local target
+    for target in $AGENT_SKILLS_TARGETS; do
+        [ -n "$target" ] && echo "$target"
+    done
+}
+
+_skill_target_label() {
+    local target="$1"
+    case "$target" in
+        .claude/skills|*/.claude/skills) echo "claude" ;;
+        .codex/skills|*/.codex/skills) echo "codex" ;;
+        *) echo "$target" ;;
+    esac
+}
 
 skill-ls() {
-    local skills_dir=".claude/skills"
-    for d in "$CLAUDE_SKILLS"/*/; do
+    local skills_dir
+    for d in "$AGENT_SKILLS"/*/; do
 		[ -d "$d" ] || continue
 		name=$(basename "$d")
 		[[ "$name" == .* ]] && continue  # skip hidden directories
-        if [ -d "$skills_dir/$name" ] || [ -L "$skills_dir/$name" ]; then
-            printf "\e[32m%s [installed]\e[0m\n" "$name"
+        local installed=0
+        local total=0
+        local installed_labels=()
+        local missing_labels=()
+        for skills_dir in $(_skill_target_dirs); do
+            total=$((total + 1))
+            if [ -d "$skills_dir/$name" ] || [ -L "$skills_dir/$name" ]; then
+                installed=$((installed + 1))
+                installed_labels+=("$(_skill_target_label "$skills_dir")")
+            else
+                missing_labels+=("$(_skill_target_label "$skills_dir")")
+            fi
+        done
+        local installed_text missing_text
+        installed_text=$(IFS=,; echo "${installed_labels[*]}")
+        missing_text=$(IFS=,; echo "${missing_labels[*]}")
+        if [ "$installed" -eq "$total" ] && [ "$total" -gt 0 ]; then
+            printf "\e[32m%s [installed: %s]\e[0m\n" "$name" "$installed_text"
+        elif [ "$installed" -gt 0 ]; then
+            printf "\e[33m%s [partial: %s; missing: %s]\e[0m\n" "$name" "$installed_text" "$missing_text"
         else
             echo "$name"
         fi
@@ -24,36 +73,41 @@ skill-add() {
         echo "Usage: skill-add <skill> [skill...]"
         return 1
     fi
-    mkdir -p .claude/skills
+    local skills_dir
+    for skills_dir in $(_skill_target_dirs); do
+        mkdir -p "$skills_dir"
+    done
     for s in "$@"; do
-        local src="$CLAUDE_SKILLS/$s"
-        local dst=".claude/skills/$s"
-        if [ -e "$dst" ] || [ -L "$dst" ]; then
-            if [ -L "$dst" ]; then
-                local target
-                target=$(readlink "$dst")
-                case "$target" in
-                    *hnl-claude-skills*)
-                        echo "ALREADY_INSTALLED: $s"
-                        continue
-                        ;;
-                    *)
-                        echo "EXISTS: $s (not managed by hnl-claude-skills, skipping)"
-                        continue
-                        ;;
-                esac
-            else
-                echo "EXISTS: $s (not managed by hnl-claude-skills, skipping)"
-                continue
-            fi
+        local src="$AGENT_SKILLS/$s"
+        if [ ! -d "$src" ]; then
+            echo "NOT_FOUND: $s"
+            continue
         fi
-        ln -sfn "$src" "$dst"
-        echo "OK: $s"
+        for skills_dir in $(_skill_target_dirs); do
+            local dst="$skills_dir/$s"
+            if [ -e "$dst" ] || [ -L "$dst" ]; then
+                if [ -L "$dst" ]; then
+                    local target
+                    target=$(readlink "$dst")
+                    if _skill_managed_target "$target"; then
+                        echo "ALREADY_INSTALLED: $s ($skills_dir)"
+                        continue
+                    fi
+                    echo "EXISTS: $s ($skills_dir; not managed by agent-skills, skipping)"
+                    continue
+                fi
+                echo "EXISTS: $s ($skills_dir; not managed by agent-skills, skipping)"
+                continue
+            else
+                ln -sfn "$src" "$dst"
+                echo "OK: $s ($skills_dir)"
+            fi
+        done
     done
 }
 
 skill-add-all() {
-    for d in "$CLAUDE_SKILLS"/*/; do
+    for d in "$AGENT_SKILLS"/*/; do
         skill-add "$(basename "$d")"
     done
 }
@@ -64,20 +118,23 @@ skill-remove() {
         return 1
     fi
     for s in "$@"; do
-        local dst=".claude/skills/$s"
-        if [ -e "$dst" ] || [ -L "$dst" ]; then
-            rm -f "$dst"
-            echo "REMOVED: $s"
-        else
-            echo "NOT FOUND: $s"
-        fi
+        local skills_dir
+        for skills_dir in $(_skill_target_dirs); do
+            local dst="$skills_dir/$s"
+            if [ -e "$dst" ] || [ -L "$dst" ]; then
+                rm -f "$dst"
+                echo "REMOVED: $s ($skills_dir)"
+            else
+                echo "NOT FOUND: $s ($skills_dir)"
+            fi
+        done
     done
 }
 
 _load_bundles() {
-    local conf="$CLAUDE_SKILLS/bundles.conf"
+    local conf="$AGENT_SKILLS/bundles.conf"
     if [ ! -f "$conf" ]; then
-        echo "ERROR: bundles.conf not found in $CLAUDE_SKILLS" >&2
+        echo "ERROR: bundles.conf not found in $AGENT_SKILLS" >&2
         return 1
     fi
 
@@ -248,31 +305,28 @@ skill-bundle-remove() {
 }
 
 skill-ls-installed() {
-    local skills_dir=".claude/skills"
-    if [ ! -d "$skills_dir" ]; then
-        echo "No skills directory found in current project."
-        return
-    fi
     local count=0
-    for item in "$skills_dir"/*/; do
-        [ -d "$item" ] || continue
-        count=1
-        local name
-        name=$(basename "$item")
-        if [ -L "$item" ] || [ -L "${item%/}" ]; then
-            local target
-            target=$(readlink "${item%/}")
-            case "$target" in
-                *hnl-claude-skills*)
+    local skills_dir
+    for skills_dir in $(_skill_target_dirs); do
+        [ -d "$skills_dir" ] || continue
+        echo "[$skills_dir]"
+        for item in "$skills_dir"/*/; do
+            [ -d "$item" ] || continue
+            count=1
+            local name
+            name=$(basename "$item")
+            if [ -L "$item" ] || [ -L "${item%/}" ]; then
+                local target
+                target=$(readlink "${item%/}")
+                if _skill_managed_target "$target"; then
                     echo "LINKED:   $name -> $target"
-                    ;;
-                *)
+                else
                     echo "EXTERNAL: $name -> $target"
-                    ;;
-            esac
-        else
-            echo "EXTERNAL: $name (local directory)"
-        fi
+                fi
+            else
+                echo "EXTERNAL: $name (local directory)"
+            fi
+        done
     done
     if [ "$count" -eq 0 ]; then
         echo "No skills installed in current project."
@@ -280,6 +334,6 @@ skill-ls-installed() {
 }
 
 skill-update() {
-    echo "Updating hnl-claude-skills..."
-    (cd "$CLAUDE_SKILLS" && git pull && git submodule update --remote)
+    echo "Updating agent-skills..."
+    (cd "$AGENT_SKILLS" && git pull && git submodule update --remote)
 }

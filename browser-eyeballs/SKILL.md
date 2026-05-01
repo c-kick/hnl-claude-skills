@@ -1,16 +1,16 @@
 ---
 name: browser-eyeballs
-description: Browse and visually inspect webpages using headless Chromium via Puppeteer MCP. Use when you need to see a page, interact with a web UI, extract information that WebFetch can't get (JS-rendered content, SPAs, authenticated pages), or when the user wants to show you something in a browser.
+description: Browse and visually inspect webpages using an available browser automation tool, preferably headless Chromium via Puppeteer MCP. Use when you need to see a page, interact with a web UI, extract information that a plain fetch cannot get (JS-rendered content, SPAs, authenticated pages), or when the user wants to show you something in a browser.
 ---
 
 # Browser Eyeballs
 
-Visually browse webpages using a headless Chromium instance running in Docker via the Puppeteer MCP server.
+Visually browse webpages using the active agent's available browser automation tools. Prefer a headless Chromium instance via the Puppeteer MCP server when available.
 
 ## When to Use
 
 - The user says "look at this page", "check this UI", "show you something"
-- You need to see JS-rendered or SPA content that `WebFetch` returns as empty/useless
+- You need to see JS-rendered or SPA content that a plain fetch returns as empty/useless
 - You need to interact with a page (click, fill forms, scroll) to reach content
 - You need to inspect visual layout, styling, or rendering
 - You need to navigate an authenticated web app
@@ -18,7 +18,9 @@ Visually browse webpages using a headless Chromium instance running in Docker vi
 
 ## Prerequisites
 
-The Puppeteer MCP server must be configured in `~/.claude.json` under `mcpServers.puppeteer`. It runs headless Chromium inside Docker (`mcp/puppeteer-remote` image).
+Use whichever browser automation is available in the current agent session. In Claude Code, this may be a Puppeteer MCP server. In Codex, this may be Playwright or another browser/screenshot tool exposed by the environment.
+
+For Claude Code, the Puppeteer MCP server can be configured in `~/.claude.json` under `mcpServers.puppeteer`. It runs headless Chromium inside Docker (`mcp/puppeteer-remote` image).
 
 The recommended MCP config uses `bash -c` to automatically kill stale containers from previous sessions before starting a new one. Without this, a leftover container holding port 9222 will silently prevent MCP connection on the next session (and this cannot be fixed mid-session).
 
@@ -34,13 +36,13 @@ The recommended MCP config uses `bash -c` to automatically kill stale containers
 }
 ```
 
-If the MCP tools (`mcp__puppeteer__puppeteer_navigate`, etc.) are not available, tell the user the Puppeteer MCP server is not configured or not running.
+If no browser automation tools are available, tell the user that browser inspection is not configured in this agent session and explain which capability is missing.
 
 ## Workflow
 
 ### Step 1: Navigate
 
-The **first call in every session** must include `launchOptions`. Subsequent calls don't need them.
+With Puppeteer MCP, the **first call in every session** must include `launchOptions`. Subsequent calls don't need them. If using a different browser tool, use that tool's normal navigation/open-page flow.
 
 ```
 mcp__puppeteer__puppeteer_navigate({
@@ -64,11 +66,11 @@ After navigation, take a screenshot to see the page:
 mcp__puppeteer__puppeteer_screenshot()
 ```
 
-The MCP tool returns the screenshot inline as an image — you can see and analyze it directly.
+The browser tool should return a screenshot inline or save one where the agent can inspect it.
 
 ### Step 3: Interact (if needed)
 
-Use the available MCP tools to interact with the page:
+Use the available browser tools to interact with the page. With Puppeteer MCP, the common tools are:
 
 - **`puppeteer_click`** — click an element by CSS selector
 - **`puppeteer_fill`** — type into an input field (selector + value)
@@ -92,7 +94,7 @@ puppeteer_evaluate({
 
 ### Step 5: Save Screenshots (if needed)
 
-The MCP screenshot tool shows images inline but doesn't save to disk. If the user needs a persistent screenshot, use `puppeteer_evaluate` to capture via CDP and save to `~/screenshots/`:
+The Puppeteer MCP screenshot tool shows images inline but doesn't save to disk. If the user needs a persistent screenshot, use the active tool's screenshot-save option. With Puppeteer MCP, you can capture via CDP and save to `~/screenshots/`:
 
 ```js
 puppeteer_evaluate({
@@ -144,20 +146,21 @@ The Chromium instance runs inside a Docker container on **bridge networking**. T
 
 ## Troubleshooting
 
-### MCP tools not available
-The Puppeteer MCP server connects at **session startup only**. If the `mcp__puppeteer__*` tools are not found (ToolSearch returns nothing), the server failed to start. This cannot be fixed mid-session.
+### Browser tools not available
+Some agents only expose browser tools at session startup. If no browser automation or screenshot tools are available, the browser integration failed to start or is not configured. This often cannot be fixed mid-session.
 
 If you're using the recommended MCP config (with `bash -c` cleanup), stale containers are cleaned up automatically. If tools are still missing after a fresh session start:
 
 1. Check for stale containers manually: `docker ps -a --filter "ancestor=mcp/puppeteer-remote"`
-2. Verify `~/.claude.json` has the `mcpServers.puppeteer` entry (see Prerequisites for the recommended config)
-3. Check Docker is running: `docker ps`
+2. For Claude Code, verify `~/.claude.json` has the `mcpServers.puppeteer` entry (see Prerequisites for the recommended config)
+3. For Codex, verify the session/environment exposes a browser automation tool such as Playwright
+4. Check Docker is running if using the Docker-based Puppeteer MCP server: `docker ps`
 
 ### Container starts but tools still missing
-Check `~/.claude.json` has `mcpServers.puppeteer` configured. The server must be defined at user level, not project level.
+For Claude Code, check `~/.claude.json` has `mcpServers.puppeteer` configured. The server must be defined at user level, not project level.
 
 ## What This is NOT
 
-- Not a replacement for `WebFetch` — if you just need to read page content or an API response, `WebFetch` is faster and simpler
+- Not a replacement for plain fetch/read tools — if you just need to read page content or an API response, those are faster and simpler
 - Not a testing framework — this is for ad-hoc visual inspection and interaction
 - Not persistent — the browser state (cookies, sessions) lives only as long as the MCP container runs

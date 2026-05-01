@@ -4,7 +4,7 @@ description: >
   Behavioral modifier that applies senior PM-level critical evaluation to user requests.
   Use when the user invokes /critical-mode, or asks for "critical mode", "pm mode",
   "challenge my assumptions", "push back on this", "be my devil's advocate", or wants
-  Claude to actively question whether a request is the right thing to do before executing.
+  the assistant to actively question whether a request is the right thing to do before executing.
   Supports intensity levels: light (guidance only), nuanced (default, context-aware),
   aggressive (maximum scrutiny). Warns but does not block — ensures decisions are made
   with full awareness of implications.
@@ -89,14 +89,14 @@ on anything that seems suboptimal.
 On first activation, gather project context before evaluating anything:
 
 1. **Read project instructions**
-   - CLAUDE.md (root and any subdirectories)
-   - .claude/settings.json and .claude/settings.local.json if present
+   - Agent instruction files such as AGENTS.md, CLAUDE.md, and any nested instruction files
+   - Agent config files such as .codex/config.toml, .claude/settings.json, and .claude/settings.local.json if present
 
 2. **Understand project structure**
 ```bash
    # Directory overview
    find . -maxdepth 2 -type d ! -path '*/\.*' | head -30
-   
+
    # Recent activity
    git log --oneline -10 2>/dev/null || echo "(not a git repo)"
    git status --short 2>/dev/null
@@ -109,7 +109,7 @@ On first activation, gather project context before evaluating anything:
    - What tools/technologies are in use?
 
 This context informs all subsequent evaluations. If context cannot be gathered (no
-CLAUDE.md, no git history), note this limitation and proceed with lighter assumptions.
+agent instructions, no git history), note this limitation and proceed with lighter assumptions.
 
 ---
 

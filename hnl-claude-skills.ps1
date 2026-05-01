@@ -1,14 +1,53 @@
-﻿# hnl-claude-skills
+﻿# agent-skills
+if (-not $env:AGENT_SKILLS) {
+    if ($env:CLAUDE_SKILLS) {
+        $env:AGENT_SKILLS = $env:CLAUDE_SKILLS
+    } else {
+        $env:AGENT_SKILLS = $PSScriptRoot
+    }
+}
 if (-not $env:CLAUDE_SKILLS) {
-    $env:CLAUDE_SKILLS = "$HOME\.config\hnl-claude-skills"
+    $env:CLAUDE_SKILLS = $env:AGENT_SKILLS
+}
+if (-not $env:AGENT_SKILLS_TARGETS) {
+    $env:AGENT_SKILLS_TARGETS = ".claude\skills;.codex\skills"
+}
+
+function _skill-target-dirs {
+    $env:AGENT_SKILLS_TARGETS -split ';' | Where-Object { $_ }
+}
+
+function _skill-managed-target {
+    param($target)
+    if (-not $target) { return $false }
+    $targetText = [string]$target
+    return $targetText.StartsWith($env:AGENT_SKILLS) -or $targetText.StartsWith($env:CLAUDE_SKILLS)
+}
+
+function _skill-target-label {
+    param([string]$target)
+    if ($target -match '(^|[\\/])\.claude[\\/]skills$') { return "claude" }
+    if ($target -match '(^|[\\/])\.codex[\\/]skills$') { return "codex" }
+    return $target
 }
 
 function skill-ls {
-    $skillsDir = ".claude\skills"
-    Get-ChildItem $env:CLAUDE_SKILLS -Directory | Where-Object { $_.Name -notlike '.*' } | ForEach-Object {
+    $targetDirs = @(_skill-target-dirs)
+    Get-ChildItem $env:AGENT_SKILLS -Directory | Where-Object { $_.Name -notlike '.*' } | ForEach-Object {
         $name = $_.Name
-        if (Test-Path (Join-Path $skillsDir $name)) {
-            Write-Host "$name [installed]" -ForegroundColor Green
+        $installedLabels = @()
+        $missingLabels = @()
+        foreach ($skillsDir in $targetDirs) {
+            if (Test-Path (Join-Path $skillsDir $name)) {
+                $installedLabels += (_skill-target-label $skillsDir)
+            } else {
+                $missingLabels += (_skill-target-label $skillsDir)
+            }
+        }
+        if ($installedLabels.Count -eq $targetDirs.Count -and $installedLabels.Count -gt 0) {
+            Write-Host "$name [installed: $($installedLabels -join ',')]" -ForegroundColor Green
+        } elseif ($installedLabels.Count -gt 0) {
+            Write-Host "$name [partial: $($installedLabels -join ','); missing: $($missingLabels -join ',')]" -ForegroundColor Yellow
         } else {
             Write-Host $name
         }
@@ -16,48 +55,58 @@ function skill-ls {
 }
 
 function skill-add {
-    New-Item -ItemType Directory -Force -Path ".claude\skills" | Out-Null
+    foreach ($skillsDir in (_skill-target-dirs)) {
+        New-Item -ItemType Directory -Force -Path $skillsDir | Out-Null
+    }
     foreach ($s in $args) {
-        $src = "$env:CLAUDE_SKILLS\$s"
-        $dst = ".claude\skills\$s"
-        if (Test-Path $dst) {
-			$item = Get-Item $dst
-			$isOurJunction = ($item.LinkType -eq "Junction") -and ($item.Target -like "*hnl-claude-skills*")
-			if ($isOurJunction) {
-				Write-Host "ALREADY_INSTALLED: $s"
-				continue
-			} else {
-				Write-Host "EXISTS: $s (not managed by hnl-claude-skills, skipping)"
-				continue
-			}
-		}
-		New-Item -ItemType Junction -Path $dst -Target $src | Out-Null
-		Write-Host "OK: $s"
+        $src = "$env:AGENT_SKILLS\$s"
+        if (-not (Test-Path $src)) {
+            Write-Host "NOT_FOUND: $s"
+            continue
+        }
+        foreach ($skillsDir in (_skill-target-dirs)) {
+            $dst = Join-Path $skillsDir $s
+            if (Test-Path $dst) {
+			    $item = Get-Item $dst
+			    $isManagedJunction = ($item.LinkType -eq "Junction") -and (_skill-managed-target $item.Target)
+			    if ($isManagedJunction) {
+				    Write-Host "ALREADY_INSTALLED: $s ($skillsDir)"
+				    continue
+			    } else {
+				    Write-Host "EXISTS: $s ($skillsDir; not managed by agent-skills, skipping)"
+				    continue
+			    }
+		    }
+		    New-Item -ItemType Junction -Path $dst -Target $src | Out-Null
+		    Write-Host "OK: $s ($skillsDir)"
+        }
     }
 }
 
 function skill-add-all {
-    Get-ChildItem $env:CLAUDE_SKILLS -Directory | ForEach-Object {
+    Get-ChildItem $env:AGENT_SKILLS -Directory | ForEach-Object {
         skill-add $_.Name
     }
 }
 
 function skill-remove {
     foreach ($s in $args) {
-        $dst = ".claude\skills\$s"
-        if (Test-Path $dst) {
-            cmd /c rmdir "$dst"
-            Write-Host "REMOVED: $s"
-        } else {
-            Write-Host "NOT FOUND: $s"
+        foreach ($skillsDir in (_skill-target-dirs)) {
+            $dst = Join-Path $skillsDir $s
+            if (Test-Path $dst) {
+                cmd /c rmdir "$dst"
+                Write-Host "REMOVED: $s ($skillsDir)"
+            } else {
+                Write-Host "NOT FOUND: $s ($skillsDir)"
+            }
         }
     }
 }
 
 function _load-bundles {
-    $bundleFile = "$env:CLAUDE_SKILLS\bundles.conf"
+    $bundleFile = "$env:AGENT_SKILLS\bundles.conf"
     if (-not (Test-Path $bundleFile)) {
-        Write-Host "ERROR: bundles.conf not found in $env:CLAUDE_SKILLS"
+        Write-Host "ERROR: bundles.conf not found in $env:AGENT_SKILLS"
         exit 1
     }
     $bundles = @{}
@@ -164,34 +213,33 @@ function skill-bundle-remove {
 
 
 function skill-ls-installed {
-    $skillsDir = ".claude\skills"
-    if (-not (Test-Path $skillsDir)) {
-        Write-Host "No skills directory found in current project."
-        return
-    }
-    $items = Get-ChildItem $skillsDir
-    if (-not $items) {
-        Write-Host "No skills installed in current project."
-        return
-    }
-    foreach ($item in $items) {
-        $isJunction = $item.Attributes -band [IO.FileAttributes]::ReparsePoint
-        if ($isJunction) {
-            $target = (Get-Item $item.FullName).Target
-            if ($target -like "*hnl-claude-skills*") {
-                Write-Host "LINKED:   $($item.Name) -> $target"
+    $count = 0
+    foreach ($skillsDir in (_skill-target-dirs)) {
+        if (-not (Test-Path $skillsDir)) { continue }
+        Write-Host "[$skillsDir]"
+        foreach ($item in (Get-ChildItem $skillsDir)) {
+            $count++
+            $isJunction = $item.Attributes -band [IO.FileAttributes]::ReparsePoint
+            if ($isJunction) {
+                $target = (Get-Item $item.FullName).Target
+                if (_skill-managed-target $target) {
+                    Write-Host "LINKED:   $($item.Name) -> $target"
+                } else {
+                    Write-Host "EXTERNAL: $($item.Name) -> $target"
+                }
             } else {
-                Write-Host "EXTERNAL: $($item.Name) -> $target"
+                Write-Host "EXTERNAL: $($item.Name) (local directory)"
             }
-        } else {
-            Write-Host "EXTERNAL: $($item.Name) (local directory)"
         }
+    }
+    if ($count -eq 0) {
+        Write-Host "No skills installed in current project."
     }
 }
 
 function skill-update {
-    Write-Host "Updating hnl-claude-skills..."
-    Push-Location $env:CLAUDE_SKILLS
+    Write-Host "Updating agent-skills..."
+    Push-Location $env:AGENT_SKILLS
     git pull
     git submodule update --remote
     Pop-Location

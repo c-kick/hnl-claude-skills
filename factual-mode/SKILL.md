@@ -5,7 +5,7 @@ description: >
   Use this skill when the user invokes /factual-mode, or when they ask for
   "factual mode", "grounded mode", "no guessing", "only use what's in front of you",
   "don't hallucinate", "stick to the facts", "evidence-based only", or any variation
-  requesting that Claude restrict itself to verifiable claims. Also appropriate when
+  requesting that the assistant restrict itself to verifiable claims. Also appropriate when
   the user is about to analyze documents, audit code, review contracts, or perform
   any task where accuracy matters more than creativity.
 allowed-tools: Read, Grep, Glob, Bash
@@ -19,7 +19,7 @@ evidence you can point to. Confidence is not a substitute for proof.
 
 When activated, immediately confirm with:
 
-> **Factual mode active.** I will ground all claims in evidence, flag uncertainty
+> **📐 Factual mode active.** I will ground all claims in evidence, flag uncertainty
 > explicitly, and retract anything I can't support. Accuracy over completeness.
 
 If `$ARGUMENTS` are provided, apply factual mode constraints and immediately begin

@@ -9,12 +9,12 @@ user-invocable: true
 
 Draft a commit message **strictly for the work done in this conversation session**, and list the exact files that should be staged.
 
-**Key principle:** The working tree often has pre-existing uncommitted changes from other work. This skill ONLY covers changes made during the current session. It determines this from the conversation history — the Edit, Write, and Bash tool calls show exactly which files were touched.
+**Key principle:** The working tree often has pre-existing uncommitted changes from other work. This skill ONLY covers changes made during the current session. It determines this from the conversation history — file-edit and command tool calls show exactly which files were touched.
 
 ## Process
 
 1. **Review the conversation history** to build the authoritative list of changes:
-   - Every file modified via Edit or Write tools → source file
+   - Every file modified via the active agent's edit/write tools → source file
    - Every `npm run build` or similar → identify which build artifacts correspond to those source files
    - The initial git status snapshot (at conversation start) shows what was already dirty — **exclude those unless this session edited them further**
 
@@ -50,7 +50,7 @@ Draft a commit message **strictly for the work done in this conversation session
    - Bullet point details
    - Another change
 
-   Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+   [Optional assistant attribution, only if the user or project convention asks for it]
    ```
 
 ## Rules
@@ -62,6 +62,7 @@ Draft a commit message **strictly for the work done in this conversation session
 - Body explains "what" and "why", not "how"
 - For multi-topic sessions, consider suggesting separate commits per logical change
 - Do NOT commit — only draft the message and list the files
+- Do NOT add assistant attribution unless the user or project convention asks for it
 - When unsure if a build artifact changed due to this session's work, check its diff content
 
 ## Identifying Build Artifacts

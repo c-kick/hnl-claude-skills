@@ -1,15 +1,15 @@
------
-
-## name: sanity-check
+---
+name: sanity-check
 description: >
-Diagnostic pause when a Claude Code session has gone off-track. Use when the user
-says things like “wait, what are we doing”, “we’re lost”, “this isn’t what I asked for”,
-“let’s step back”, “where are we”, “sanity check this”, or when you notice the session
-has drifted significantly from the original goal. Produces a SITREP (situation report),
-diagnoses what went wrong, assesses context window health, and proposes corrective
-actions or a fresh-start prompt if the context is too polluted to recover.
+  Diagnostic pause when an agent session has gone off-track. Use when the user
+  says things like "wait, what are we doing", "we're lost", "this isn't what I asked for",
+  "let's step back", "where are we", "sanity check this", or when you notice the session
+  has drifted significantly from the original goal. Produces a SITREP (situation report),
+  diagnoses what went wrong, assesses context window health, and proposes corrective
+  actions or a fresh-start prompt if the context is too polluted to recover.
 allowed-tools: Read, Bash, Glob
 user-invocable: true
+---
 
 # Sanity Check
 
@@ -24,12 +24,12 @@ Gather evidence, then present findings.
 
 ## Self-Invocation
 
-This skill may be invoked proactively by Claude when:
+This skill may be invoked proactively by the active agent when:
 
 - The user expresses confusion or frustration about session direction
 - Multiple consecutive corrections or backtracking have occurred
 - The current work has visibly diverged from the original objective
-- Claude is uncertain what the user actually wants after several exchanges
+- The agent is uncertain what the user actually wants after several exchanges
 
 When self-invoking, signal clearly:
 
@@ -140,7 +140,7 @@ Copy the above and start a new session. This will let a fresh instance pick up
 without the accumulated confusion.
 ```
 
-The handoff prompt must be **complete and actionable** — a fresh Claude instance
+The handoff prompt must be **complete and actionable** — a fresh agent session
 reading only that prompt should have everything it needs to continue effectively.
 
 -----

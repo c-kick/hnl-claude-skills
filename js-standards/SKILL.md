@@ -1,3 +1,8 @@
+---
+name: js-standards
+description: JavaScript standards and patterns. Apply when writing or modifying JavaScript modules, event handling, lazy loading, scroll behavior, or browser-side utilities.
+---
+
 # JavaScript Standards and Patterns
 
 Apply when writing or modifying JavaScript modules. Covers module patterns, event handling, lazy loading, and scroll utilities.
