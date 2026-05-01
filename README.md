@@ -23,7 +23,7 @@ You can also define bundles - predefined collections of skills. Example: `skill-
 
 1. Clone the repository
 ```powershell
-git clone --recurse-submodules https://github.com/c-kick/agent-skills.git "$HOME/.config/agent-skills"
+git clone --recurse-submodules https://github.com/c-kick/hnl-agent-skills.git "$HOME/.config/agent-skills"
 ```
 
 > **Note:** PowerShell does not expand `~` for external programs like `git`. Always use `$HOME` instead.
@@ -43,7 +43,7 @@ The default location is `~/.config/agent-skills`. To use a different path, clone
 
 1. Clone the repository
 ```bash
-git clone --recurse-submodules https://github.com/c-kick/agent-skills.git ~/.config/agent-skills
+git clone --recurse-submodules https://github.com/c-kick/hnl-agent-skills.git ~/.config/agent-skills
 ```
 
 2. Add to `~/.bashrc` or `~/.zshrc`:
