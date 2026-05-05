@@ -23,19 +23,19 @@ You can also define bundles - predefined collections of skills. Example: `skill-
 
 1. Clone the repository
 ```powershell
-git clone --recurse-submodules https://github.com/c-kick/hnl-agent-skills.git "$HOME/.config/agent-skills"
+git clone --recurse-submodules https://github.com/c-kick/hnl-agent-skills.git "$HOME/.config/hnl-agent-skills"
 ```
 
 > **Note:** PowerShell does not expand `~` for external programs like `git`. Always use `$HOME` instead.
 
-The default location is `~/.config/agent-skills`. To use a different path, clone there instead and set `AGENT_SKILLS` in your environment before sourcing the script. Existing `CLAUDE_SKILLS` setups still work as a fallback.
+The default location is `~/.config/hnl-agent-skills`. To use a different path, clone there instead and set `AGENT_SKILLS` in your environment before sourcing the script. Existing `CLAUDE_SKILLS` setups still work as a fallback.
 
 2. Add to PowerShell profile (Run `notepad $PROFILE` in PowerShell*):
 ```powershell
 # Optional: set a custom location
-# $env:AGENT_SKILLS = "D:\path\to\agent-skills"
+# $env:AGENT_SKILLS = "D:\path\to\hnl-agent-skills"
 # $env:AGENT_SKILLS_TARGETS = ".claude\skills;.codex\skills"
-. "$HOME\.config\agent-skills\agent-skills.ps1"
+. "$HOME\.config\hnl-agent-skills\agent-skills.ps1"
 ```
 > If you get an error running `notepad $PROFILE`, this means you don't have a PowerShell profile yet. You can create one with `New-Item -Path $PROFILE -ItemType File -Force`
 
@@ -43,15 +43,15 @@ The default location is `~/.config/agent-skills`. To use a different path, clone
 
 1. Clone the repository
 ```bash
-git clone --recurse-submodules https://github.com/c-kick/hnl-agent-skills.git ~/.config/agent-skills
+git clone --recurse-submodules https://github.com/c-kick/hnl-agent-skills.git ~/.config/hnl-agent-skills
 ```
 
 2. Add to `~/.bashrc` or `~/.zshrc`:
 ```bash
 # Optional: set a custom location
-# export AGENT_SKILLS="/path/to/agent-skills"
+# export AGENT_SKILLS="/path/to/hnl-agent-skills"
 # export AGENT_SKILLS_TARGETS=".claude/skills .codex/skills"
-. "$HOME/.config/agent-skills/agent-skills.sh"
+. "$HOME/.config/hnl-agent-skills/agent-skills.sh"
 ```
 
 Reload your shell (in Windows PowerShell, just run `. $PROFILE`), done.
@@ -130,7 +130,7 @@ skill-two
 
 You don't have to rely on the skills that this repository gives you - you can add your own to the local repository!
 
-Create a skill and copy its folder to `~/.config/agent-skills/` (or whichever `AGENT_SKILLS` path you're using). Once added, `skill-add my-skill` works in any project just like any other skill.
+Create a skill and copy its folder to `~/.config/hnl-agent-skills/` (or whichever `AGENT_SKILLS` path you're using). Once added, `skill-add my-skill` works in any project just like any other skill.
 
 ---
 
